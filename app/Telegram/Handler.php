@@ -198,7 +198,7 @@ class Handler extends WebhookHandler
         dispatch(new DeactivateNumberJob($number_state->number, $number_state->buyer_id))->delay(now()->addMinutes(2));
 
         Telegraph::chat($number_state->seller_id)
-            ->message("Покупатель ожидает код для номера: {$number_state->number}. Пожалуйста, введите код в течении 2 минут. Формат ввода <b>799999999:1234</b>")
+            ->message("Покупатель ожидает код для номера: {$number_state->number}. Пожалуйста, введите код в течении 2 минут.")
             ->keyboard(
                 Keyboard::make()->buttons(
                     [
@@ -327,8 +327,17 @@ class Handler extends WebhookHandler
             $codeNumberState = $this->numberStateService->getCodeNumberState($this->chat->chat_id);
 
             if (!empty($codeNumberState) && !$create_number) {
-                $this->processCodeInput();
+                // Проверим, является ли сообщение ответом
+                if ($this->message->replyToMessage()) {
+                    $this->processReplyCodeInput($codeNumberState);
+                } else {
+                    // Если не используете ручной ввод формата "номер:код", этот блок можно убрать
+                    $this->chat->message('Ошибка: Пожалуйста, ответьте на сообщение с номером и введите только код.')->send();
+                }
             }
+//            if (!empty($codeNumberState) && !$create_number) {
+//                $this->processCodeInput();
+//            }
         } catch (\Exception $exception) {
             // Логируем исключение для отладки
             error_log($exception->getMessage());
@@ -337,6 +346,36 @@ class Handler extends WebhookHandler
             (new ButtonsConstruct($this->chat, 'Я тебя не понимаю', 'Назад', 'start'))
                 ->storeButton();
         }
+    }
+    private function processReplyCodeInput($codeNumberState)
+    {
+        // Получаем текст исходного сообщения, на которое был ответ
+        $originalMessage = $this->message->replyToMessage()->text();
+
+        // Ищем номер в исходном сообщении (например, он был в уведомлении)
+        preg_match('/номера\s*:\s*(\d+)/i', $originalMessage, $matches);
+        if (count($matches) < 2) {
+            $this->chat->message('Ошибка: не удалось определить номер. Убедитесь, что вы ответили на сообщение с уведомлением о номере.')->send();
+            return;
+        }
+
+        $number_input = $matches[1]; // Номер из исходного сообщения
+        $code_input = trim($this->message->text()); // Код из ответа
+
+        // по номеру получаем нужное состояние и покупателя
+        $necessaryState = $this->numberStateService->getCodeNumberBuyerId($number_input);
+        $buyer_id = $necessaryState->buyer_id;
+
+        // Отправляем код покупателю
+        Telegraph::chat($buyer_id)
+            ->message("Код для номера {$necessaryState->number}: {$code_input}")
+            ->keyboard(
+                Keyboard::make()->buttons([
+                    Button::make('Код успешен')->action('codeReceived')->param('number', $necessaryState->number),
+                    Button::make('Код неуспешен')->action('codeFalseReceived')->param('number', $necessaryState->number),
+                ])
+            )
+            ->send();
     }
 
     //логика обработки входящих номеров от продавца(сотрудника)
@@ -415,34 +454,34 @@ class Handler extends WebhookHandler
     }
 
     //логика обработки входящих кодов для покупателя
-    private function processCodeInput()
-    {
-        $code = $this->message?->text();
-        $number = explode(":", $code);// Ожидаем формат "номер : код"
-
-        if (empty($code) && count($number) != 2) {
-            $this->chat->message('Ошибка: неверный формат. Введите номер и код в формате "номер : код".')->send();
-            return;
-        }
-
-        $number_input = trim($number[0]);
-        $code_input = trim($number[1]);
-
-        //по номеру получаем нужное состояние и покупателя
-        $necessaryState = $this->numberStateService->getCodeNumberBuyerId($number_input);
-        $buyer_id = $necessaryState->buyer_id;
-
-        Telegraph::chat($buyer_id)
-            ->message("Код для номера {$necessaryState->number}: {$code_input}")
-            ->keyboard(
-                Keyboard::make()->buttons([
-                    Button::make('Код успешен')->action('codeReceived')->param('number', $necessaryState->number),
-                    Button::make('Код неуспешен')->action('codeFalseReceived')->param('number', $necessaryState->number),
-                ])
-            )
-            ->send();
-
-    }
+//    private function processCodeInput()
+//    {
+//        $code = $this->message?->text();
+//        $number = explode(":", $code);// Ожидаем формат "номер : код"
+//
+//        if (empty($code) && count($number) != 2) {
+//            $this->chat->message('Ошибка: неверный формат. Введите номер и код в формате "номер : код".')->send();
+//            return;
+//        }
+//
+//        $number_input = trim($number[0]);
+//        $code_input = trim($number[1]);
+//
+//        //по номеру получаем нужное состояние и покупателя
+//        $necessaryState = $this->numberStateService->getCodeNumberBuyerId($number_input);
+//        $buyer_id = $necessaryState->buyer_id;
+//
+//        Telegraph::chat($buyer_id)
+//            ->message("Код для номера {$necessaryState->number}: {$code_input}")
+//            ->keyboard(
+//                Keyboard::make()->buttons([
+//                    Button::make('Код успешен')->action('codeReceived')->param('number', $necessaryState->number),
+//                    Button::make('Код неуспешен')->action('codeFalseReceived')->param('number', $necessaryState->number),
+//                ])
+//            )
+//            ->send();
+//
+//    }
 
     //положительный статус кода и реализация логики
     public function codeReceived()
@@ -452,6 +491,8 @@ class Handler extends WebhookHandler
         $this->numberService->updateNumberWithBuyerUuid($number_data, $this->chat->chat_id, StatusNumberEnum::active);
 
         $this->numberStateService->deleteCodeNumberState($this->chat->chat_id, $number_data);
+
+        $this->chat->deleteKeyboard($this->messageId)->send();
 
         (new ButtonsConstruct($this->chat, "<b>Номер добавлен!</b>", "Назад", "buyNumbers"))->storeButton();
     }
@@ -464,6 +505,8 @@ class Handler extends WebhookHandler
         $this->numberService->updateNumberWithBuyerUuid($number_data, $this->chat->chat_id, StatusNumberEnum::failed);
 
         $this->numberStateService->deleteCodeNumberState($this->chat->chat_id, $number_data);
+
+        $this->chat->deleteKeyboard($this->messageId)->send();
 
         (new ButtonsConstruct($this->chat, "<b>Номер деактивирован!</b>", "Назад", "buyNumbers"))->storeButton();
     }
@@ -557,7 +600,8 @@ class Handler extends WebhookHandler
 
     public function getBuyerNumbers()
     {
-        $numbers = $this->numberService->getWithBuyerNumbers($this->chat->chat_id, StatusNumberEnum::active);
+        $salesmen = $this->salesmanService->getSalesman($this->chat->chat_id);
+        $numbers = $this->numberService->getActiveStatusNumbers($salesmen);
 
         if ($numbers->isEmpty()) {
             $this->reply('Нет купленных номеров');
