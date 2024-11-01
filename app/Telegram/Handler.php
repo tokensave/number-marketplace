@@ -347,6 +347,7 @@ class Handler extends WebhookHandler
                 ->storeButton();
         }
     }
+
     private function processReplyCodeInput($codeNumberState)
     {
         // Получаем текст исходного сообщения, на которое был ответ
@@ -704,14 +705,18 @@ class Handler extends WebhookHandler
     {
         $number = $this->numberService->getWithBuyerNumbers($this->chat->chat_id, StatusNumberEnum::active, null, $this->data->get('number'));
 
-        if (!$number)
+        if (!$number) {
             (new ButtonsConstruct($this->chat, 'Ошибка: Не удалось получить номер. Попробуйте еще раз.', 'Назад', 'getNumbersBuyer'))
                 ->storeButton();
+            return;
+        }
 
         $updateAt = Carbon::parse($number->updated_at);
         $now = Carbon::now();
 
-        if ($now->diffInMinutes($updateAt) > 10) {
+        $diffMinutes = abs($now->diffInMinutes($updateAt, false)); // получаем положительное значение
+
+        if ($diffMinutes > 10) {
             (new ButtonsConstruct($this->chat, "Номер {$number->number} уже засчитан", 'Назад', 'getNumbersBuyer'))
                 ->storeButton();
         } else {
@@ -723,7 +728,6 @@ class Handler extends WebhookHandler
             (new ButtonsConstruct($this->chat, "Номер {$number->number} отправлен в диспут", 'Назад', 'getNumbersBuyer'))
                 ->storeButton();
         }
-
     }
 
 }
