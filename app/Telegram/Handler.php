@@ -678,11 +678,12 @@ class Handler extends WebhookHandler
         } else {
             $telegram = $this->numberService->getWithBuyerNumbers($this->chat->chat_id, null, TypeNumberEnum::telegram);
             $whatsapp = $this->numberService->getWithBuyerNumbers($this->chat->chat_id, null, TypeNumberEnum::whatsapp);
+            $buyerModel = $this->buyerService->getBuyer($this->chat->chat_id);
 
             if (count($telegram) > 0) {
                 $active = count($telegram->where('status_number', StatusNumberEnum::active));
                 $deactivate = count($telegram->where('status_number', StatusNumberEnum::failed));
-                $this->userStatisticsService->createStatistics($this->chat->chat_id, UserTypeEnum::buyer->name, $this->chat->username, TypeNumberEnum::telegram->name, $active, $deactivate, null);
+                $this->userStatisticsService->createStatistics($this->chat->chat_id, UserTypeEnum::buyer->name, $buyerModel->name, TypeNumberEnum::telegram->name, $active, $deactivate, null);
                 $message = "<b>🔵 Telegram 🔵</b>" . "\n\n" .
                     "Купленные номера: " . $active . "\n\n" .
                     "Слетевшие номера: " . $deactivate;
@@ -691,7 +692,7 @@ class Handler extends WebhookHandler
             if (count($whatsapp) > 0) {
                 $active = count($whatsapp->where('status_number', StatusNumberEnum::active));
                 $deactivate = count($whatsapp->where('status_number', StatusNumberEnum::failed));
-                $this->userStatisticsService->createStatistics($this->chat->chat_id, UserTypeEnum::buyer->name, $this->chat->username, TypeNumberEnum::whatsapp->name, $active, $deactivate, null);
+                $this->userStatisticsService->createStatistics($this->chat->chat_id, UserTypeEnum::buyer->name, $buyerModel->name, TypeNumberEnum::whatsapp->name, $active, $deactivate, null);
                 $message = "<b>🟢 WhatsApp 🟢</b>" . "\n\n" .
                     "Купленные номера: " . $active . "\n\n" .
                     "Слетевшие номера: " . $deactivate;
