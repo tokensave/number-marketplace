@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('uuid')->comment('Uuid продавец/покупатель');
             $table->string('type')->comment('Type продавец/покупатель');
             $table->string('provider_number')->nullable()->comment('Тип номера');
+            $table->string('name')->nullable()->comment('Имя продавец/покупатель');
             $table->integer('count_active')->nullable()->comment('Количество купленных номеров');
             $table->integer('count_deactivate')->nullable()->comment('Количество слетевших номеров');
             $table->integer('count_pending')->nullable()->comment('Количество ожидающих очереди номеров');
