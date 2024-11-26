@@ -65,7 +65,6 @@ class Handler extends WebhookHandler
     }
 
 
-
     public function storeBuyer()
     {
         $uuid = $this->chat->chat_id;
