@@ -64,6 +64,8 @@ class Handler extends WebhookHandler
             ->send();
     }
 
+
+
     public function storeBuyer()
     {
         $uuid = $this->chat->chat_id;
@@ -73,8 +75,14 @@ class Handler extends WebhookHandler
         if (!$salesman) {
 
             $this->reply($this->buyerService->storeBuyer($uuid));
+            $buyer = $this->buyerService->getBuyer($uuid);
 
-            $this->chat
+            if ($buyer->enabled != true) {
+                $this->chat
+                    ->message('🚫 <b>Ваш аккаунт не активирован. Обратитесь к администратору.</b> 🚫')
+                    ->send();
+            } else {
+                $this->chat
                 ->message('<b>Выберите действие.</b>')
                 ->keyboard(
                     Keyboard::make()->buttons(
@@ -84,10 +92,11 @@ class Handler extends WebhookHandler
                             Button::make('Ваша статистика')->action('getUserStatistics')->param('buyer', true),
                             Button::make('Назад')->action('start'),
                         ])
-                )
-                ->send();
+                    )
+                        ->send();
+            }
         } else {
-            (new ButtonsConstruct($this->chat, "<b>Вы уже зарегистрированы как продавец.</b>", "Назад", "start"))->storeButton();
+            (new ButtonsConstruct($this->chat, "🚫 <b>Вы уже зарегистрированы как продавец.</b> 🚫", "Назад", "start"))->storeButton();
         }
     }
 
@@ -98,8 +107,8 @@ class Handler extends WebhookHandler
             ->keyboard(
                 Keyboard::make()->buttons(
                     [
-                        Button::make('🔵 Telegram')->action('getNumbersSalesmen')->param('provider', TypeNumberEnum::telegram->name),
-                        Button::make('🟢 WhatsApp')->action('getNumbersSalesmen')->param('provider', TypeNumberEnum::whatsapp->name),
+                        Button::make('🔵 Telegram 🔵')->action('getNumbersSalesmen')->param('provider', TypeNumberEnum::telegram->name),
+                        Button::make('🟢 WhatsApp 🟢')->action('getNumbersSalesmen')->param('provider', TypeNumberEnum::whatsapp->name),
                         Button::make('Назад')->action('storeBuyer'),
                     ])
             )
@@ -114,7 +123,7 @@ class Handler extends WebhookHandler
         $numbers = $this->buyerService->getNumbersSalesman($provider);
 
         if (count($numbers) < 1) {
-            (new ButtonsConstruct($this->chat, "<b>Нет доступных номеров</b>", 'Назад', 'buyNumbers'))
+            (new ButtonsConstruct($this->chat, "❌ <b>Нет доступных номеров</b> ❌", 'Назад', 'buyNumbers'))
                 ->storeButton();
             return;
         }
@@ -131,7 +140,7 @@ class Handler extends WebhookHandler
             ->keyboard(Keyboard::make()->buttons($buttons)->chunk(2)) // Разделим кнопки на строки по 2 в строке
             ->send();
 
-        (new ButtonsConstruct($this->chat, "<b>Нажав на номер вы перейдете на его покупку</b>", 'Назад', 'buyNumbers'))
+        (new ButtonsConstruct($this->chat, "💰 <b>Нажав на номер вы перейдете на его покупку</b> 💰", 'Назад', 'buyNumbers'))
             ->storeButton();
     }
 
@@ -160,37 +169,19 @@ class Handler extends WebhookHandler
     public function getCode()
     {
         $this->chat
-            ->message('<b>Ожидайте код. Время ожидание 2 минуты. У продавца на отправку кода две попытки</b>')
-//            ->keyboard(
-//                Keyboard::make()->buttons(
-//                    [
-//                        Button::make('Код не пришел')->action('repeatGetCode')->param('number', $this->data->get('number')),
-//                    ])
-//            )
+            ->message('⏳ <b>Ожидайте код. Время ожидание 2 минуты. У продавца на отправку кода две попытки</b> ⏳')
             ->send();
 
         //получаем состояние по номеру, покупателю чтобы отправить сообщение
         $number_state = $this->numberStateService->getPendingCodeNumber($this->data->get('number'), $this->chat->chat_id);
 
         if (!$number_state) {
-            (new ButtonsConstruct($this->chat, "<b>Ошибка в покупке номера. Выберете другой номер.</b>", "Назад", "buyNumbers"))->storeButton();
+            (new ButtonsConstruct($this->chat, "❌ <b>Ошибка в покупке номера. Выберете другой номер.</b> ❌", "Назад", "buyNumbers"))->storeButton();
         } else {
             $this->processNumberState($number_state);
         }
     }
 
-//    public function repeatGetCode()
-//    {
-//        $number_state = $this->numberStateService->getPendingCodeNumber($this->data->get('number'), $this->chat->chat_id);
-//        if (!$number_state) {
-//            $this->reply("Номер деактивирован: {$this->data->get('number')}.</b>");
-//        } else {
-//            $number_state->increment('request_count');
-//            //здесь добавить 2 минутное ожидание
-//            $this->processNumberState($number_state);
-//        }
-//
-//    }
 
     private function processNumberState($number_state)
     {
@@ -198,7 +189,7 @@ class Handler extends WebhookHandler
         dispatch(new DeactivateNumberJob($number_state->number, $number_state->buyer_id))->delay(now()->addMinutes(2));
 
         Telegraph::chat($number_state->seller_id)
-            ->message("Покупатель ожидает код для номера: {$number_state->number}. Пожалуйста, введите код в течении 2 минут.")
+            ->message("⌛️ Покупатель ожидает код для номера: {$number_state->number}. Пожалуйста, введите код в течении 2 минут. ⌛️")
             ->keyboard(
                 Keyboard::make()->buttons(
                     [
@@ -212,7 +203,7 @@ class Handler extends WebhookHandler
     {
         $number_state = $this->numberStateService->getPendingCodeNumberWihtSeller($this->data->get('number'), $this->chat->chat_id);
         if (!$number_state) {
-            $this->reply("Номер деактивирован: {$this->data->get('number')}.");
+            $this->reply("❌ Номер деактивирован: {$this->data->get('number')}. ❌");
         } else {
             $number_state->increment('request_count');
             Telegraph::chat($number_state->seller_id)
@@ -232,7 +223,7 @@ class Handler extends WebhookHandler
         $state = $this->numberStateService->getDeactiveNumberWihtSeller($this->data->get('number'), $this->chat->chat_id);
 
         Telegraph::chat($state->buyer_id)
-            ->message("<b>Номер {$state->number} деактивирован.</b>")
+            ->message("❌ <b>Номер {$state->number} деактивирован.</b> ❌")
             ->keyboard(
                 Keyboard::make()->buttons(
                     [
@@ -244,7 +235,7 @@ class Handler extends WebhookHandler
         $state->delete();
         $number = $this->numberService->getNumber($this->data->get('number'));
         $number->update(['status_number' => StatusNumberEnum::failed]);
-        (new ButtonsConstruct($this->chat, "<b>Номер деактивирован: {$this->data->get('number')}.</b>", "Назад", "salesman"))->storeButton();
+        (new ButtonsConstruct($this->chat, "❌ <b>Номер деактивирован: {$this->data->get('number')}.</b> ❌", "Назад", "salesman"))->storeButton();
     }
 
     //логика кнопок продавца(сотрудника)
@@ -255,8 +246,14 @@ class Handler extends WebhookHandler
 
         if (!$buyer) {
             $this->reply($this->salesmanService->storeSalesman($uuid));
+            $salesman = $this->salesmanService->getSalesman($uuid);
 
-            $this->chat
+            if ($salesman->enabled != true) {
+                $this->chat
+                    ->message('🚫 <b>Ваш аккаунт не активирован. Обратитесь к администратору.</b> 🚫')
+                    ->send();
+            } else {
+                $this->chat
                 ->message('<b>Выберите действие.</b>')
                 ->keyboard(
                     Keyboard::make()->buttons(
@@ -268,8 +265,9 @@ class Handler extends WebhookHandler
                         ])
                 )
                 ->send();
+            }
         } else {
-            (new ButtonsConstruct($this->chat, "<b>Вы уже зарегистрированы как покупатель.</b>", 'Назад', 'start'))->storeButton();
+            (new ButtonsConstruct($this->chat, "🚫 <b>Вы уже зарегистрированы как покупатель.</b> 🚫", 'Назад', 'start'))->storeButton();
         }
 
     }
@@ -282,8 +280,8 @@ class Handler extends WebhookHandler
             ->keyboard(
                 Keyboard::make()->buttons(
                     [
-                        Button::make('🔵 Telegram')->action('addNumbersSalesmen')->param('provider', TypeNumberEnum::telegram->name),
-                        Button::make('🟢 WhatsApp')->action('addNumbersSalesmen')->param('provider', TypeNumberEnum::whatsapp->name),
+                        Button::make('🔵 Telegram 🔵')->action('addNumbersSalesmen')->param('provider', TypeNumberEnum::telegram->name),
+                        Button::make('🟢 WhatsApp 🟢')->action('addNumbersSalesmen')->param('provider', TypeNumberEnum::whatsapp->name),
                         Button::make('Назад')->action('salesman'),
                     ])
             )
@@ -300,11 +298,11 @@ class Handler extends WebhookHandler
 
         switch ($provider) {
             case TypeNumberEnum::telegram->name :
-                (new ButtonsConstruct($this->chat, "Введите номер Telegram в соответствующем порядке:\n\n<b>9003233212</b>\n\nКаждый номер начинается с новой строки", 'Отмена', 'salesman'))
+                (new ButtonsConstruct($this->chat, "📝 Введите номер 🔵 Telegram 🔵 в соответствующем порядке:\n\n<b>9003233212</b>\n\nКаждый номер начинается с новой строки 📝", 'Отмена', 'salesman'))
                     ->storeButton();
                 break;
             case TypeNumberEnum::whatsapp->name :
-                (new ButtonsConstruct($this->chat, "Введите номер WhatsApp в соответствующем порядке:\n\n<b>9003233212</b>\n\nКаждый номер начинается с новой строки", 'Отмена', 'salesman'))
+                (new ButtonsConstruct($this->chat, "📝 Введите номер 🟢 WhatsApp 🟢 в соответствующем порядке:\n\n<b>9003233212</b>\n\nКаждый номер начинается с новой строки 📝", 'Отмена', 'salesman'))
                     ->storeButton();
                 break;
         }
@@ -332,18 +330,16 @@ class Handler extends WebhookHandler
                     $this->processReplyCodeInput($codeNumberState);
                 } else {
                     // Если не используете ручной ввод формата "номер:код", этот блок можно убрать
-                    $this->chat->message('Ошибка: Пожалуйста, ответьте на сообщение с номером и введите только код.')->send();
+                    $this->chat->message('❌ Ошибка: Пожалуйста, ответьте на сообщение с номером и введите только код. ❌')->send();
                 }
             }
-//            if (!empty($codeNumberState) && !$create_number) {
-//                $this->processCodeInput();
-//            }
+
         } catch (\Exception $exception) {
             // Логируем исключение для отладки
             error_log($exception->getMessage());
 
             // Можно добавить сообщение об ошибке для пользователя
-            (new ButtonsConstruct($this->chat, 'Я тебя не понимаю', 'Назад', 'start'))
+            (new ButtonsConstruct($this->chat, '❌ Я тебя не понимаю ❌', 'Назад', 'start'))
                 ->storeButton();
         }
     }
@@ -356,7 +352,7 @@ class Handler extends WebhookHandler
         // Ищем номер в исходном сообщении (например, он был в уведомлении)
         preg_match('/номера\s*:\s*(\d+)/i', $originalMessage, $matches);
         if (count($matches) < 2) {
-            $this->chat->message('Ошибка: не удалось определить номер. Убедитесь, что вы ответили на сообщение с уведомлением о номере.')->send();
+            $this->chat->message('❌ Ошибка: не удалось определить номер. Убедитесь, что вы ответили на сообщение с уведомлением о номере. ❌')->send();
             return;
         }
 
@@ -369,7 +365,7 @@ class Handler extends WebhookHandler
 
         // Отправляем код покупателю
         Telegraph::chat($buyer_id)
-            ->message("Код для номера {$necessaryState->number}: {$code_input}")
+            ->message("🔒 Код для номера {$necessaryState->number}: {$code_input} 🔒")
             ->keyboard(
                 Keyboard::make()->buttons([
                     Button::make('Код успешен')->action('codeReceived')->param('number', $necessaryState->number),
@@ -387,7 +383,7 @@ class Handler extends WebhookHandler
             $numbers = $this->message?->text();
 
             if (empty($numbers)) {
-                (new ButtonsConstruct($this->chat, 'Ошибка: Не удалось получить номер. Попробуйте еще раз.', 'Назад', 'salesman'))
+                (new ButtonsConstruct($this->chat, '❌ Ошибка: Не удалось получить номер. Попробуйте еще раз. ❌', 'Назад', 'salesman'))
                     ->storeButton();
                 //удаляем состояние
                 $this->numberStateService->deleteAddNumberState($this->chat->chat_id);
@@ -410,7 +406,7 @@ class Handler extends WebhookHandler
             $this->numberStateService->deleteAddNumberState($this->chat->chat_id);
 
             // Можно добавить сообщение об ошибке для пользователя
-            (new ButtonsConstruct($this->chat, 'Произошла ошибка при обработке номера.', 'Назад', 'salesman'))
+            (new ButtonsConstruct($this->chat, '❌ Произошла ошибка при обработке номера. ❌', 'Назад', 'salesman'))
                 ->storeButton();
         }
     }
@@ -424,7 +420,7 @@ class Handler extends WebhookHandler
 
 
         if ($salesman) {
-            $this->reply("Перед вами очередь {$count_numbers} номеров.");
+            $this->reply("⌛️ Перед вами очередь {$count_numbers} номеров. ⌛️");
 
             $count = 0;
             // Сохраняем номер для продавца
@@ -443,14 +439,14 @@ class Handler extends WebhookHandler
                     $this->numberStateService->createStateForNumber($this->chat->chat_id, $num, $provider->name);
                 } else {
                     // Если номер не прошел валидацию
-                    $this->reply("Ошибка: Номер '{$num}' должен содержать только цифры и состоять из 10 символов.");
+                    $this->reply("❌ Ошибка: Номер '{$num}' должен содержать только цифры и состоять из 10 символов. ❌");
                 }
             }
         } else {
-            $this->chat->message('Ошибка: Продавец не найден.')->send();
+            $this->chat->message('❌ Ошибка: Продавец не найден. ❌')->send();
         }
 
-        (new ButtonsConstruct($this->chat, "<b>Добавлено {$count} номеров!</b>", 'Назад', 'salesman'))
+        (new ButtonsConstruct($this->chat, "✅ <b>Добавлено {$count} номеров!</b> ✅", 'Назад', 'salesman'))
             ->storeButton();
     }
 
@@ -490,12 +486,18 @@ class Handler extends WebhookHandler
         $number_data = $this->data->get('number');
 
         $this->numberService->updateNumberWithBuyerUuid($number_data, $this->chat->chat_id, StatusNumberEnum::active);
+        
+        $number = $this->numberService->getNumber($number_data);
+        $salesman_chat = $number->salesman->uuid;
+        Telegraph::chat($salesman_chat)
+            ->message("✅ Номер {$number->number} успешно куплен! ✅")
+            ->send();
 
         $this->numberStateService->deleteCodeNumberState($this->chat->chat_id, $number_data);
 
         $this->chat->deleteKeyboard($this->messageId)->send();
 
-        (new ButtonsConstruct($this->chat, "<b>Номер добавлен!</b>", "Назад", "buyNumbers"))->storeButton();
+        (new ButtonsConstruct($this->chat, "✅ <b>Номер добавлен!</b> ✅", "Назад", "buyNumbers"))->storeButton();
     }
 
     //отрицательный статус кода и реализация логики
@@ -505,11 +507,17 @@ class Handler extends WebhookHandler
 
         $this->numberService->updateNumberWithBuyerUuid($number_data, $this->chat->chat_id, StatusNumberEnum::failed);
 
+        $number = $this->numberService->getNumber($number_data);
+        $salesman_chat = $number->salesman->uuid;
+        Telegraph::chat($salesman_chat)
+            ->message("❌ Номер {$number->number} слетел! ❌")
+            ->send();
+
         $this->numberStateService->deleteCodeNumberState($this->chat->chat_id, $number_data);
 
         $this->chat->deleteKeyboard($this->messageId)->send();
 
-        (new ButtonsConstruct($this->chat, "<b>Номер деактивирован!</b>", "Назад", "buyNumbers"))->storeButton();
+        (new ButtonsConstruct($this->chat, "❌ <b>Номер деактивирован!</b> ❌", "Назад", "buyNumbers"))->storeButton();
     }
 
     public function getNumbersStatus()
@@ -536,7 +544,7 @@ class Handler extends WebhookHandler
         $numbers = $this->numberService->getPendingNumbers($salesmen);
 
         if ($numbers->isEmpty()) {
-            $this->reply('Нет активных номеров');
+            $this->reply('❌ Нет активных номеров ❌');
             return;
         }
 
@@ -553,7 +561,7 @@ class Handler extends WebhookHandler
             ->keyboard(Keyboard::make()->buttons($buttons)->chunk(2))// Разделим кнопки на строки по 2 в строки
             ->send();
 
-        (new ButtonsConstruct($this->chat, "<b>Нажав на кнопку с номером он будет удален!</b>", "Назад", "getNumbersStatus"))->storeButton();
+        (new ButtonsConstruct($this->chat, "🆘 <b>Нажав на кнопку с номером он будет удален!</b> 🆘", "Назад", "getNumbersStatus"))->storeButton();
     }
 
     public function getDeactivateNumbers()
@@ -563,7 +571,7 @@ class Handler extends WebhookHandler
         $numbers = $this->numberService->getDeactiveStatusNumbers($salesmen);
 
         if ($numbers->isEmpty()) {
-            $this->reply('Нет неактивных номеров');
+            $this->reply('❌ Нет неактивных номеров ❌');
             return;
         }
 
@@ -605,7 +613,7 @@ class Handler extends WebhookHandler
         $numbers = $this->numberService->getActiveStatusNumbers($salesmen);
 
         if ($numbers->isEmpty()) {
-            $this->reply('Нет купленных номеров');
+            $this->reply('❌ Нет купленных номеров ❌');
             return;
         }
 
@@ -631,7 +639,7 @@ class Handler extends WebhookHandler
 
         $this->chat->deleteMessage($this->messageId)->send();
 
-        $this->reply('Номер успешно удален!');
+        $this->reply('❌ Номер успешно удален! ❌');
     }
 
     public function getUserStatistics()
@@ -647,8 +655,8 @@ class Handler extends WebhookHandler
                 $active = $this->numberService->getTelegramNumbers($salesman, StatusNumberEnum::active);
                 $deactivate = $this->numberService->getTelegramNumbers($salesman, StatusNumberEnum::failed);
                 $pending = $this->numberService->getTelegramNumbers($salesman, StatusNumberEnum::pending);
-                $this->userStatisticsService->createStatistics($salesman->uuid, UserTypeEnum::seller->name, TypeNumberEnum::telegram->name, count($active), count($deactivate), count($pending));
-                $message = "<b>🔵 Telegram</b>" .
+                $this->userStatisticsService->createStatistics($salesman->uuid, UserTypeEnum::seller->name, $salesman->name, TypeNumberEnum::telegram->name, count($active), count($deactivate), count($pending));
+                $message = "<b>🔵 Telegram 🔵</b>" .
                     "\n\nНомера в ожидании: " . count($pending) . "\n\n" .
                     "Купленные номера: " . count($active) . "\n\n" .
                     "Слетевшие номера: " . count($deactivate);
@@ -658,8 +666,8 @@ class Handler extends WebhookHandler
                 $active = $this->numberService->getWhatsAppNumbers($salesman, StatusNumberEnum::active);
                 $deactivate = $this->numberService->getWhatsAppNumbers($salesman, StatusNumberEnum::failed);
                 $pending = $this->numberService->getWhatsAppNumbers($salesman, StatusNumberEnum::pending);
-                $this->userStatisticsService->createStatistics($salesman->uuid, UserTypeEnum::seller->name, TypeNumberEnum::whatsapp->name, count($active), count($deactivate), count($pending));
-                $message = "<b>🟢 WhatsApp</b>" .
+                $this->userStatisticsService->createStatistics($salesman->uuid, UserTypeEnum::seller->name, $salesman->name, TypeNumberEnum::whatsapp->name, count($active), count($deactivate), count($pending));
+                $message = "<b>🟢 WhatsApp 🟢</b>" .
                     "\n\nНомера в ожидании: " . count($pending) . "\n\n" .
                     "Купленные номера: " . count($active) . "\n\n" .
                     "Слетевшие номера: " . count($deactivate);
@@ -675,8 +683,8 @@ class Handler extends WebhookHandler
             if (count($telegram) > 0) {
                 $active = count($telegram->where('status_number', StatusNumberEnum::active));
                 $deactivate = count($telegram->where('status_number', StatusNumberEnum::failed));
-                $this->userStatisticsService->createStatistics($this->chat->chat_id, UserTypeEnum::buyer->name, TypeNumberEnum::telegram->name, $active, $deactivate, null);
-                $message = "<b>🔵 Telegram</b>" . "\n\n" .
+                $this->userStatisticsService->createStatistics($this->chat->chat_id, UserTypeEnum::buyer->name, $this->chat->username, TypeNumberEnum::telegram->name, $active, $deactivate, null);
+                $message = "<b>🔵 Telegram 🔵</b>" . "\n\n" .
                     "Купленные номера: " . $active . "\n\n" .
                     "Слетевшие номера: " . $deactivate;
                 $this->chat->message($message)->send();
@@ -684,14 +692,14 @@ class Handler extends WebhookHandler
             if (count($whatsapp) > 0) {
                 $active = count($whatsapp->where('status_number', StatusNumberEnum::active));
                 $deactivate = count($whatsapp->where('status_number', StatusNumberEnum::failed));
-                $this->userStatisticsService->createStatistics($this->chat->chat_id, UserTypeEnum::buyer->name, TypeNumberEnum::whatsapp->name, $active, $deactivate, null);
-                $message = "<b>🟢 WhatsApp</b>" . "\n\n" .
+                $this->userStatisticsService->createStatistics($this->chat->chat_id, UserTypeEnum::buyer->name, $this->chat->username, TypeNumberEnum::whatsapp->name, $active, $deactivate, null);
+                $message = "<b>🟢 WhatsApp 🟢</b>" . "\n\n" .
                     "Купленные номера: " . $active . "\n\n" .
                     "Слетевшие номера: " . $deactivate;
                 $this->chat->message($message)->send();
             }
             if (count($telegram) === 0 && count($whatsapp) === 0) {
-                (new ButtonsConstruct($this->chat, "<b>Нет статистики.</b>", 'Назад', 'storeBuyer'))->storeButton();
+                (new ButtonsConstruct($this->chat, "<b>❌ Нет статистики. ❌ </b>", 'Назад', 'storeBuyer'))->storeButton();
             }
         }
     }
@@ -706,7 +714,7 @@ class Handler extends WebhookHandler
         $number = $this->numberService->getWithBuyerNumbers($this->chat->chat_id, StatusNumberEnum::active, null, $this->data->get('number'));
 
         if (!$number) {
-            (new ButtonsConstruct($this->chat, 'Ошибка: Не удалось получить номер. Попробуйте еще раз.', 'Назад', 'getNumbersBuyer'))
+            (new ButtonsConstruct($this->chat, '❌ Ошибка: Не удалось получить номер. Попробуйте еще раз. ❌', 'Назад', 'getNumbersBuyer'))
                 ->storeButton();
             return;
         }
@@ -717,15 +725,15 @@ class Handler extends WebhookHandler
         $diffMinutes = abs($now->diffInMinutes($updateAt, false)); // получаем положительное значение
 
         if ($diffMinutes > 10) {
-            (new ButtonsConstruct($this->chat, "Номер {$number->number} уже засчитан", 'Назад', 'getNumbersBuyer'))
+            (new ButtonsConstruct($this->chat, "❌ Номер {$number->number} уже засчитан ❌", 'Назад', 'getNumbersBuyer'))
                 ->storeButton();
         } else {
             $salesman_chat = $number->salesman->uuid;
             Telegraph::chat($salesman_chat)
-                ->message("Номер {$number->number} ушел в дистут.")
+                ->message("❌ Номер {$number->number} ушел в дистут. ❌")
                 ->send();
             $number->update(['status_number' => StatusNumberEnum::failed]);
-            (new ButtonsConstruct($this->chat, "Номер {$number->number} отправлен в диспут", 'Назад', 'getNumbersBuyer'))
+            (new ButtonsConstruct($this->chat, "🆘 Номер {$number->number} отправлен в диспут 🆘", 'Назад', 'getNumbersBuyer'))
                 ->storeButton();
         }
     }
