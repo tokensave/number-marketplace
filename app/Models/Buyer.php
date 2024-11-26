@@ -12,6 +12,8 @@ class Buyer extends Model
     protected $fillable =
         [
             'uuid',
-            'order_id'
+            'order_id',
+            'enabled',
+            'name',
         ];
 }

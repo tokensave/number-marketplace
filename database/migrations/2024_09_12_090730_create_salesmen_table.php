@@ -15,6 +15,8 @@ return new class extends Migration
         Schema::create('salesmen', function (Blueprint $table) {
             $table->id();
             $table->string('uuid')->nullable(false)->comment('Уникальный номер продавца');
+            $table->boolean('enabled')->default(false)->comment('Доступ');
+            $table->string('name')->nullable()->comment('Имя продавца');
             $table->timestamps();
         });
     }

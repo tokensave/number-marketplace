@@ -15,6 +15,7 @@ class Statistics extends Model
         [
             'uuid',
             'type',
+            'name',
             'provider_number',
             'count_active',
             'count_deactivate',

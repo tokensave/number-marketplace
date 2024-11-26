@@ -12,6 +12,8 @@ class Salesman extends Model
     protected $fillable =
         [
             'uuid',
+            'enabled',
+            'name',
         ];
 
     public function numbers()
