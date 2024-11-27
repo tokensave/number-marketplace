@@ -43,12 +43,6 @@ class StatisticsResource extends ModelResource
                     fn($item) => $item->type->name()
                 ),
                 Text::make(
-                    'Uuid',
-                    'uuid',
-                    fn($item) => $item->uuid
-                )
-                ,
-                Text::make(
                     'Имя',
                     'name',
                     fn($item) => $item->name

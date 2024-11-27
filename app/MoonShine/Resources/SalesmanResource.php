@@ -43,7 +43,6 @@ class SalesmanResource extends ModelResource
         return [
             Block::make([
                 ID::make()->sortable(),
-                Text::make('UUID', 'uuid'),
                 Text::make('Имя', 'name'),
                 Switcher::make('Активен', 'enabled'),
                 Date::make('Создан', 'created_at'),

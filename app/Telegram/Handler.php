@@ -19,6 +19,8 @@ use DefStudio\Telegraph\Keyboard\Button;
 use DefStudio\Telegraph\Keyboard\Keyboard;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Stringable;
+use Illuminate\Support\Facades\Artisan;
+use DefStudio\Telegraph\Models\TelegraphBot;
 
 class Handler extends WebhookHandler
 {
@@ -328,9 +330,6 @@ class Handler extends WebhookHandler
                 // Проверим, является ли сообщение ответом
                 if ($this->message->replyToMessage()) {
                     $this->processReplyCodeInput($codeNumberState);
-                } else {
-                    // Если не используете ручной ввод формата "номер:код", этот блок можно убрать
-                    $this->chat->message('❌ Ошибка: Пожалуйста, ответьте на сообщение с номером и введите только код. ❌')->send();
                 }
             }
 
@@ -362,6 +361,10 @@ class Handler extends WebhookHandler
         // по номеру получаем нужное состояние и покупателя
         $necessaryState = $this->numberStateService->getCodeNumberBuyerId($number_input);
         $buyer_id = $necessaryState->buyer_id;
+
+        Telegraph::chat($necessaryState->seller_id)
+            ->message("✅ Код на номер {$necessaryState->number} отправлен! ✅")
+            ->send();
 
         // Отправляем код покупателю
         Telegraph::chat($buyer_id)
@@ -655,10 +658,12 @@ class Handler extends WebhookHandler
                 $active = $this->numberService->getTelegramNumbers($salesman, StatusNumberEnum::active);
                 $deactivate = $this->numberService->getTelegramNumbers($salesman, StatusNumberEnum::failed);
                 $pending = $this->numberService->getTelegramNumbers($salesman, StatusNumberEnum::pending);
+                $count_numbers = $this->numberStatisticService->getCountNumbers(TypeNumberEnum::telegram->name);
                 $this->userStatisticsService->createStatistics($salesman->uuid, UserTypeEnum::seller->name, $salesman->name, TypeNumberEnum::telegram->name, count($active), count($deactivate), count($pending));
                 $message = "<b>🔵 Telegram 🔵</b>" .
-                    "\n\nНомера в ожидании: " . count($pending) . "\n\n" .
+                    "\n\nВсего номеров в очереди: " . $count_numbers . "\n\n" .
                     "Купленные номера: " . count($active) . "\n\n" .
+                    "Номера в ожидании: " . count($pending) . "\n\n" .
                     "Слетевшие номера: " . count($deactivate);
                 $this->chat->message($message)->send();
             }
@@ -666,10 +671,12 @@ class Handler extends WebhookHandler
                 $active = $this->numberService->getWhatsAppNumbers($salesman, StatusNumberEnum::active);
                 $deactivate = $this->numberService->getWhatsAppNumbers($salesman, StatusNumberEnum::failed);
                 $pending = $this->numberService->getWhatsAppNumbers($salesman, StatusNumberEnum::pending);
+                $count_numbers = $this->numberStatisticService->getCountNumbers(TypeNumberEnum::telegram->name);
                 $this->userStatisticsService->createStatistics($salesman->uuid, UserTypeEnum::seller->name, $salesman->name, TypeNumberEnum::whatsapp->name, count($active), count($deactivate), count($pending));
                 $message = "<b>🟢 WhatsApp 🟢</b>" .
-                    "\n\nНомера в ожидании: " . count($pending) . "\n\n" .
+                    "\n\nВсего номеров в очереди: " . $count_numbers . "\n\n" .
                     "Купленные номера: " . count($active) . "\n\n" .
+                    "Номера в ожидании: " . count($pending) . "\n\n" .
                     "Слетевшие номера: " . count($deactivate);
                 $this->chat->message($message)->send();
             }
@@ -679,11 +686,12 @@ class Handler extends WebhookHandler
         } else {
             $telegram = $this->numberService->getWithBuyerNumbers($this->chat->chat_id, null, TypeNumberEnum::telegram);
             $whatsapp = $this->numberService->getWithBuyerNumbers($this->chat->chat_id, null, TypeNumberEnum::whatsapp);
-
+            $buyer = $this->buyerService->getBuyer($this->chat->chat_id);
+            
             if (count($telegram) > 0) {
                 $active = count($telegram->where('status_number', StatusNumberEnum::active));
                 $deactivate = count($telegram->where('status_number', StatusNumberEnum::failed));
-                $this->userStatisticsService->createStatistics($this->chat->chat_id, UserTypeEnum::buyer->name, $this->chat->username, TypeNumberEnum::telegram->name, $active, $deactivate, null);
+                $this->userStatisticsService->createStatistics($this->chat->chat_id, UserTypeEnum::buyer->name, $buyer->name, TypeNumberEnum::telegram->name, $active, $deactivate, null);
                 $message = "<b>🔵 Telegram 🔵</b>" . "\n\n" .
                     "Купленные номера: " . $active . "\n\n" .
                     "Слетевшие номера: " . $deactivate;
@@ -692,7 +700,7 @@ class Handler extends WebhookHandler
             if (count($whatsapp) > 0) {
                 $active = count($whatsapp->where('status_number', StatusNumberEnum::active));
                 $deactivate = count($whatsapp->where('status_number', StatusNumberEnum::failed));
-                $this->userStatisticsService->createStatistics($this->chat->chat_id, UserTypeEnum::buyer->name, $this->chat->username, TypeNumberEnum::whatsapp->name, $active, $deactivate, null);
+                $this->userStatisticsService->createStatistics($this->chat->chat_id, UserTypeEnum::buyer->name, $buyer->name, TypeNumberEnum::whatsapp->name, $active, $deactivate, null);
                 $message = "<b>🟢 WhatsApp 🟢</b>" . "\n\n" .
                     "Купленные номера: " . $active . "\n\n" .
                     "Слетевшие номера: " . $deactivate;
