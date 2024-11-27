@@ -40,7 +40,8 @@ class NumberResource extends ModelResource
                 Text::make('Номер телефона', 'number'),
                 Text::make('Мессенджер', 'type_number', fn($item) => $item->type_number->value),
                 Text::make('Статус', 'status_number', fn($item) => $item->status_number->name()),
-                Text::make('Продавец', 'salesman.uuid'),
+                Text::make('Имя продавца', 'salesman.name'),
+
             ]),
         ];
     }
