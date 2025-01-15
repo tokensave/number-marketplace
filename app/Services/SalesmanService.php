@@ -3,17 +3,17 @@
 namespace App\Services;
 
 use App\Models\Salesman;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class SalesmanService
 {
-    public function storeSalesman(string $uuid): string
+    public function storeSalesman(string $uuid): Model|Builder
     {
-        Salesman::query()->firstOrCreate(['uuid' => $uuid]);
-
-        return 'Добро пожаловать!';
+        return Salesman::query()->firstOrCreate(['uuid' => $uuid]);
     }
 
-    public function getSalesman(string $uuid)
+    public function getSalesman(string $uuid): Model|Builder|null
     {
         return Salesman::query()->where('uuid', $uuid)->first();
     }

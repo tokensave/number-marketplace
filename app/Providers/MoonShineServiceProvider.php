@@ -6,9 +6,9 @@ namespace App\Providers;
 
 use App\MoonShine\Resources\BuyerResource;
 use App\MoonShine\Resources\NumberResource;
-use App\MoonShine\Resources\NumbersResource;
 use App\MoonShine\Resources\SalesmanResource;
 use App\MoonShine\Resources\StatisticsResource;
+use App\MoonShine\Resources\TextForTgResource;
 use MoonShine\Providers\MoonShineApplicationServiceProvider;
 use MoonShine\MoonShine;
 use MoonShine\Menu\MenuGroup;
@@ -30,41 +30,26 @@ class MoonShineServiceProvider extends MoonShineApplicationServiceProvider
         return [];
     }
 
-    /**
-     * @return list<Page>
-     */
     protected function pages(): array
     {
         return [];
     }
 
-    /**
-     * @return Closure|list<MenuElement>
-     */
     protected function menu(): array
     {
         return [
-            MenuGroup::make(static fn() => __('moonshine::ui.resource.system'), [
-                MenuItem::make(
-                    static fn() => __('moonshine::ui.resource.admins_title'),
-                    new MoonShineUserResource()
-                ),
-                // MenuItem::make(
-                //     static fn() => __('moonshine::ui.resource.role_title'),
-                //     new MoonShineUserRoleResource()
-                // ),
-                MenuItem::make('Номера', new NumberResource()),
-                MenuItem::make('Покупатели', new BuyerResource()),
-               MenuItem::make('Продавцы', new SalesmanResource()),
-                MenuItem::make('Статистика', new StatisticsResource()),
-
-            ]),
-
+            MenuItem::make('Покупатели', new BuyerResource())
+                ->icon('heroicons.user-group'),
+            MenuItem::make('Продавцы', new SalesmanResource())
+                ->icon('heroicons.users'),
+//            MenuItem::make('Статистика', new StatisticsResource()),
+            MenuItem::make('Кнопки для Бота', new TextForTgResource())
+                ->icon('heroicons.pencil'),
         ];
     }
 
     /**
-     * @return Closure|array{css: string, colors: array, darkColors: array}
+     * @return array
      */
     protected function theme(): array
     {

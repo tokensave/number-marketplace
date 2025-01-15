@@ -6,17 +6,16 @@ use App\Enums\StatusNumberEnum;
 use App\Enums\TypeNumberEnum;
 use App\Models\Buyer;
 use App\Models\Number;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 
 class BuyerService
 {
 
-    public function storeBuyer(string $uuid): string
+    public function storeBuyer(string $uuid): Model|Builder
     {
-        Buyer::query()->firstOrCreate(['uuid' => $uuid]);
-
-        return 'Добро пожаловать!';
-
+        return Buyer::query()->firstOrCreate(['uuid' => $uuid]);
     }
 
     public function getBuyer(string $uuid)
