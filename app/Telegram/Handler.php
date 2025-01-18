@@ -2,10 +2,10 @@
 
 namespace App\Telegram;
 
+use App\Enums\LogTelegramTypeEnum;
 use App\Enums\StatusNumberEnum;
 use App\Enums\TypeNumberEnum;
-use App\Enums\UserTypeEnum;
-use App\Jobs\DeactivateNumberJob;
+use App\Models\LogTelegram;
 use App\Services\BuyerService;
 use App\Services\NumberService;
 use App\Services\NumberStateService;
@@ -15,19 +15,16 @@ use App\Services\UserStatisticsService;
 use App\Telegram\Traits\Buyer;
 use App\Telegram\Traits\Salesman;
 use App\Telegram\Traits\Support;
-use Carbon\Carbon;
 use DefStudio\Telegraph\Facades\Telegraph;
 use DefStudio\Telegraph\Handlers\WebhookHandler;
 use DefStudio\Telegraph\Keyboard\Button;
 use DefStudio\Telegraph\Keyboard\Keyboard;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Stringable;
 
 class Handler extends WebhookHandler
 {
-    use Support;
-    use Salesman;
-    use Buyer;
+    use Support, Salesman, Buyer;
+
     protected SalesmanService $salesmanService;
     protected BuyerService $buyerService;
     protected NumberService $numberService;
@@ -91,11 +88,17 @@ class Handler extends WebhookHandler
 
         } catch (\Exception $exception) {
             // Логируем исключение для отладки
-            error_log($exception->getMessage());
-
-            // Можно добавить сообщение об ошибке для пользователя
-            (new ButtonsConstruct($this->chat, '❌ Я тебя не понимаю ❌', 'Назад', 'start'))
-                ->storeButton();
+            LogTelegram::create([
+                'chat_id' => $this->chat->chat_id,
+                'data' => $exception->getMessage(),
+                'type' => LogTelegramTypeEnum::unsuccessful
+            ]);
+            $text_unknown = $this->getTextForMsg('text_unknown_command');
+            $btn_return = $this->getTextForMsg('btn_return');
+            $buttons = Keyboard::make()->buttons([
+                Button::make($btn_return)->action('start'),
+            ]);
+            $this->sendMsg($text_unknown, $buttons);
         }
     }
     private function processReplyCodeInput(): void
@@ -147,8 +150,13 @@ class Handler extends WebhookHandler
             $numbers = $this->message?->text();
 
             if (empty($numbers)) {
-                (new ButtonsConstruct($this->chat, '❌ Ошибка: Не удалось получить номер. Попробуйте еще раз. ❌', 'Назад', 'salesman'))
-                    ->storeButton();
+                $text_false = $this->getTextForMsg('text_dispute_numbers_false');
+                $btn_return = $this->getTextForMsg('btn_return');
+                $buttons = Keyboard::make()->buttons([
+                    Button::make($btn_return)->action('salesman'),
+                ]);
+                $this->sendMsg($text_false, $buttons);
+
                 //удаляем состояние
                 $this->numberStateService->deleteAddNumberState($this->chat->chat_id);
                 return;
@@ -164,14 +172,22 @@ class Handler extends WebhookHandler
 
         } catch (\Exception $exception) {
             // Логируем исключение для отладки
-            error_log($exception->getMessage());
+            LogTelegram::create([
+                'chat_id' => $this->chat->chat_id,
+                'data' => $exception->getMessage(),
+                'type' => LogTelegramTypeEnum::unsuccessful
+            ]);
 
             // Удаляем состояние
             $this->numberStateService->deleteAddNumberState($this->chat->chat_id);
 
             // Можно добавить сообщение об ошибке для пользователя
-            (new ButtonsConstruct($this->chat, '❌ Произошла ошибка при обработке номера. ❌', 'Назад', 'salesman'))
-                ->storeButton();
+            $text_bad = $this->getTextForMsg('text_bad_command_number');
+            $btn_return = $this->getTextForMsg('btn_return');
+            $buttons = Keyboard::make()->buttons([
+                Button::make($btn_return)->action('salesman'),
+            ]);
+            $this->sendMsg($text_bad, $buttons);
         }
     }
     //логика сохранения номера
@@ -183,7 +199,9 @@ class Handler extends WebhookHandler
 
 
         if ($salesman) {
-            $this->reply("⌛️ Перед вами очередь {$count_numbers} номеров. ⌛️");
+            $text_count = $this->getTextForMsg('text_count_all');
+            $text_count = str_replace('#count_numbers#', $count_numbers, $text_count);
+            $this->reply($text_count);
 
             $count = 0;
             // Сохраняем номер для продавца
@@ -202,15 +220,23 @@ class Handler extends WebhookHandler
                     $this->numberStateService->createStateForNumber($this->chat->chat_id, $num, $provider->name);
                 } else {
                     // Если номер не прошел валидацию
-                    $this->reply("❌ Ошибка: Номер '{$num}' должен содержать только цифры и состоять из 10 символов. ❌");
+                    $text_validate = $this->getTextForMsg('text_numbers_validate');
+                    $text_validate = str_replace('#number#', $num, $text_validate);
+                    $this->reply($text_validate);
                 }
             }
         } else {
-            $this->chat->message('❌ Ошибка: Продавец не найден. ❌')->send();
+            $text_sal_bad = $this->getTextForMsg('text_salesman_validate');
+            $this->sendMsg($text_sal_bad);
         }
 
-        (new ButtonsConstruct($this->chat, "✅ <b>Добавлено {$count} номеров!</b> ✅", 'Назад', 'salesman'))
-            ->storeButton();
+        $text_add = $this->getTextForMsg('text_add_number_handler');
+        $text_add = str_replace('#count#', $count, $text_add);
+        $btn_return = $this->getTextForMsg('btn_return');
+        $buttons = Keyboard::make()->buttons([
+            Button::make($btn_return)->action('salesman'),
+        ]);
+        $this->sendMsg($text_add, $buttons);
     }
 
 //    public function getUserStatistics(): void

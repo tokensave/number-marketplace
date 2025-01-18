@@ -5,7 +5,6 @@ namespace App\Telegram\Traits;
 use App\Enums\StatusNumberEnum;
 use App\Enums\TypeNumberEnum;
 use App\Enums\UserTypeEnum;
-use App\Telegram\ButtonsConstruct;
 use DefStudio\Telegraph\Keyboard\Button;
 use DefStudio\Telegraph\Keyboard\Keyboard;
 
@@ -229,7 +228,12 @@ trait Salesman
             $this->chat->message($message)->send();
         }
         if (count($telegram) === 0 && count($whatsapp) === 0) {
-            (new ButtonsConstruct($this->chat, "<b>Нет статистики.</b>", 'Назад', 'salesman'))->storeButton();
+            $text_no_stats = $this->getTextForMsg('text_no_stats');
+            $btn_return = $this->getTextForMsg('btn_return');
+            $buttons = Keyboard::make()->buttons([
+                Button::make($btn_return)->action('salesman')
+            ]);
+            $this->sendMsg($text_no_stats, $buttons);
         }
     }
 

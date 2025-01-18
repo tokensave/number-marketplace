@@ -6,7 +6,6 @@ use App\Enums\StatusNumberEnum;
 use App\Enums\TypeNumberEnum;
 use App\Enums\UserTypeEnum;
 use App\Jobs\DeactivateNumberJob;
-use App\Telegram\ButtonsConstruct;
 use Carbon\Carbon;
 use DefStudio\Telegraph\Facades\Telegraph;
 use DefStudio\Telegraph\Keyboard\Button;
@@ -274,7 +273,12 @@ trait Buyer
             $this->chat->message($message)->send();
         }
         if (count($telegram) === 0 && count($whatsapp) === 0) {
-            (new ButtonsConstruct($this->chat, "<b>❌ Нет статистики. ❌ </b>", 'Назад', 'storeBuyer'))->storeButton();
+            $text_no_stats = $this->getTextForMsg('text_no_stats');
+            $btn_return = $this->getTextForMsg('btn_return');
+            $buttons = Keyboard::make()->buttons([
+                Button::make($btn_return)->action('buyer')
+            ]);
+            $this->sendMsg($text_no_stats, $buttons);
         }
     }
 
