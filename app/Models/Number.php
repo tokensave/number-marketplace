@@ -10,8 +10,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Number extends Model
 {
-    use HasFactory;
-
     protected $fillable =
         [
             'number',

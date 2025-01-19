@@ -3,7 +3,6 @@
 namespace App\Jobs;
 
 use App\Enums\StatusNumberEnum;
-use App\Models\CodeNumberState;
 use App\Services\NumberService;
 use App\Services\NumberStateService;
 use App\Telegram\Traits\Support;

@@ -17,7 +17,7 @@ trait Salesman
     public function salesman(): void
     {
         $buttons = [];
-        $salesman = $this->salesmanService->storeSalesman($this->chat->chat_id);
+        $salesman = $this->salesmanService->storeSalesman($this->chat->chat_id, $this->chat->name);
         $btn_return = $this->getTextForMsg('btn_return');
         $btn_add_number = $this->getTextForMsg('btn_add_number_seller');
         $btn_status = $this->getTextForMsg('btn_status_number_seller');
@@ -200,41 +200,43 @@ trait Salesman
         $salesman = $this->salesmanService->getSalesman($this->chat->chat_id);
         $telegram = $this->numberService->getTelegramNumbers($salesman);
         $whatsapp = $this->numberService->getWhatsAppNumbers($salesman);
+        $btn_return = $this->getTextForMsg('btn_return');
+        $buttons = Keyboard::make()->buttons([
+            Button::make($btn_return)->action('salesman')
+        ]);
+        $text_change = $this->getTextForMsg('text_action');
 
         if (count($telegram) > 0) {
-            $active = $this->numberService->getTelegramNumbers($salesman, StatusNumberEnum::active);
-            $deactivate = $this->numberService->getTelegramNumbers($salesman, StatusNumberEnum::failed);
-            $pending = $this->numberService->getTelegramNumbers($salesman, StatusNumberEnum::pending);
+            $active = count($telegram->where('status_number', StatusNumberEnum::active));
+            $deactivate = count($telegram->where('status_number', StatusNumberEnum::active));
+            $pending = count($telegram->where('status_number', StatusNumberEnum::pending));
             $count_numbers = $this->numberStatisticService->getCountNumbers(TypeNumberEnum::telegram->name);
-            $this->userStatisticsService->createStatistics($salesman->uuid, UserTypeEnum::seller->name, $salesman->name, TypeNumberEnum::telegram->name, count($active), count($deactivate), count($pending));
+            $this->userStatisticsService->createStatistics($salesman->uuid, UserTypeEnum::seller->name, $salesman->name, TypeNumberEnum::telegram->name, $active, $deactivate, $pending);
             $message = "<b>🔵 Telegram 🔵</b>" .
                 "\n\nВсего номеров в очереди: " . $count_numbers . "\n\n" .
-                "Купленные номера: " . count($active) . "\n\n" .
-                "Номера в ожидании: " . count($pending) . "\n\n" .
-                "Слетевшие номера: " . count($deactivate);
-            $this->chat->message($message)->send();
+                "Купленные номера: " . $active . "\n\n" .
+                "Номера в ожидании: " . $pending . "\n\n" .
+                "Слетевшие номера: " . $deactivate;
+            $this->sendMsg($message, null, 0);
         }
         if (count($whatsapp) > 0) {
-            $active = $this->numberService->getWhatsAppNumbers($salesman, StatusNumberEnum::active);
-            $deactivate = $this->numberService->getWhatsAppNumbers($salesman, StatusNumberEnum::failed);
-            $pending = $this->numberService->getWhatsAppNumbers($salesman, StatusNumberEnum::pending);
+            $active = count($whatsapp->where('status_number', StatusNumberEnum::active));
+            $deactivate = count($whatsapp->where('status_number', StatusNumberEnum::active));
+            $pending = count($whatsapp->where('status_number', StatusNumberEnum::pending));
             $count_numbers = $this->numberStatisticService->getCountNumbers(TypeNumberEnum::telegram->name);
-            $this->userStatisticsService->createStatistics($salesman->uuid, UserTypeEnum::seller->name, $salesman->name, TypeNumberEnum::whatsapp->name, count($active), count($deactivate), count($pending));
+            $this->userStatisticsService->createStatistics($salesman->uuid, UserTypeEnum::seller->name, $salesman->name, TypeNumberEnum::whatsapp->name, $active, $deactivate, $pending);
             $message = "<b>🟢 WhatsApp 🟢</b>" .
                 "\n\nВсего номеров в очереди: " . $count_numbers . "\n\n" .
-                "Купленные номера: " . count($active) . "\n\n" .
-                "Номера в ожидании: " . count($pending) . "\n\n" .
-                "Слетевшие номера: " . count($deactivate);
-            $this->chat->message($message)->send();
+                "Купленные номера: " . $active . "\n\n" .
+                "Номера в ожидании: " . $pending . "\n\n" .
+                "Слетевшие номера: " . $deactivate;
+            $this->sendMsg($message, null, 0);
         }
         if (count($telegram) === 0 && count($whatsapp) === 0) {
             $text_no_stats = $this->getTextForMsg('text_no_stats');
-            $btn_return = $this->getTextForMsg('btn_return');
-            $buttons = Keyboard::make()->buttons([
-                Button::make($btn_return)->action('salesman')
-            ]);
-            $this->sendMsg($text_no_stats, $buttons);
+            $this->sendMsg($text_no_stats);
         }
+        $this->sendMsg($text_change, $buttons, 0);
     }
 
     public function return(): void

@@ -6,7 +6,6 @@ namespace App\MoonShine\Resources;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Salesman;
-
 use MoonShine\Resources\ModelResource;
 use MoonShine\Decorations\Block;
 use MoonShine\Fields\ID;
@@ -14,7 +13,6 @@ use MoonShine\Fields\Field;
 use MoonShine\Components\MoonShineComponent;
 use MoonShine\Fields\Switcher;
 use MoonShine\Fields\Date;
-use MoonShine\ActionButtons\ActionButton;
 use MoonShine\Fields\Text;
 
 /**
@@ -28,12 +26,17 @@ class SalesmanResource extends ModelResource
 
     protected array $with = ['numbers'];
 
-    public function getActiveActions(): array 
+    public function search(): array
+    {
+        return ['name'];
+    }
+
+    public function getActiveActions(): array
     {
         return ['update', 'delete', 'massDelete'];
-    } 
+    }
 
-    protected bool $editInModal = true; 
+    protected bool $editInModal = true;
 
     /**
      * @return list<MoonShineComponent|Field>

@@ -24,10 +24,15 @@ class NumberResource extends ModelResource
 
     protected array $with = ['salesman'];
 
-    public function getActiveActions(): array 
+    public function search(): array
+    {
+        return ['salesman.name'];
+    }
+
+    public function getActiveActions(): array
     {
         return ['view', 'delete', 'massDelete'];
-    } 
+    }
 
     /**
      * @return list<MoonShineComponent|Field>

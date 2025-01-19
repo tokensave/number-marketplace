@@ -13,12 +13,12 @@ use Illuminate\Database\Eloquent\Model;
 class BuyerService
 {
 
-    public function storeBuyer(string $uuid): Model|Builder
+    public function storeBuyer(string $uuid, string $name): Model|Builder
     {
-        return Buyer::query()->firstOrCreate(['uuid' => $uuid]);
+        return Buyer::query()->firstOrCreate(['uuid' => $uuid], ['name' => $name]);
     }
 
-    public function getBuyer(string $uuid)
+    public function getBuyer(string $uuid): Model|Builder
     {
         return Buyer::query()->where('uuid', $uuid)->first();
     }
@@ -42,9 +42,4 @@ class BuyerService
                 ->get(),
         };
     }
-
-//    public function getNumber(string $number)
-//    {
-//        return Number::query()->where('number', $number)->first();
-//    }
 }

@@ -8,9 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class SalesmanService
 {
-    public function storeSalesman(string $uuid): Model|Builder
+    public function storeSalesman(string $uuid, string $name): Model|Builder
     {
-        return Salesman::query()->firstOrCreate(['uuid' => $uuid]);
+        return Salesman::query()->firstOrCreate(['uuid' => $uuid], ['name' => $name]);
     }
 
     public function getSalesman(string $uuid): Model|Builder|null

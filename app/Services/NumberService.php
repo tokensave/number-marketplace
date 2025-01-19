@@ -8,7 +8,7 @@ use App\Models\Number;
 
 class NumberService
 {
-    public function getNumber(string $number)
+    public function getNumber(string $number): Number
     {
         return Number::query()->where('number', $number)->first();
     }
@@ -76,7 +76,7 @@ class NumberService
         return $query->get();
     }
 
-    public function getWithBuyerNumbers($buyer_uuid, $status = null, $provider = null, $number = null)
+    public function getWithBuyerNumbers($buyer_uuid, $status = null, $provider = null, $number = null): array|Number
     {
         $query = Number::query()->where('buyer_uuid', $buyer_uuid);
 
@@ -93,7 +93,7 @@ class NumberService
         }
     }
 
-    public function deleteNumber(string $number)
+    public function deleteNumber(string $number): void
     {
         Number::query()->where('number', $number)->delete();
     }

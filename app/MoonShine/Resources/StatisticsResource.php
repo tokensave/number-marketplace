@@ -7,6 +7,8 @@ namespace App\MoonShine\Resources;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Statistics;
 
+use MoonShine\Components\Card;
+use MoonShine\Components\Dropdown;
 use MoonShine\Fields\Text;
 use MoonShine\Resources\ModelResource;
 use MoonShine\Decorations\Block;
@@ -23,6 +25,11 @@ class StatisticsResource extends ModelResource
 
     protected string $title = 'Статистика';
 
+    public function search(): array
+    {
+        return ['name'];
+    }
+
 
     public function getActiveActions(): array
     {
@@ -36,23 +43,21 @@ class StatisticsResource extends ModelResource
     {
         return [
             Block::make([
-                ID::make()->sortable(),
                 Text::make(
                     'Тип пользователя',
                     'type',
                     fn($item) => $item->type->name()
-                ),
+                )->sortable(),
                 Text::make(
                     'Имя',
                     'name',
                     fn($item) => $item->name
-                )
-                ,
+                )->sortable(),
                 Text::make(
                     'Мессенджер',
                     'provider_number',
                     fn($item) => $item->provider_number->value
-                ),
+                )->sortable(),
                 Text::make(
                     'Купленные',
                     'count_active',

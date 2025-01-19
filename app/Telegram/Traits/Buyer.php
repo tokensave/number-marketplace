@@ -18,7 +18,7 @@ trait Buyer
     public function buyer(): void
     {
         $buttons = [];
-        $buyer = $this->buyerService->storeBuyer($this->chat->chat_id);
+        $buyer = $this->buyerService->storeBuyer($this->chat->chat_id, $this->chat->name);
         $btn_return = $this->getTextForMsg('btn_return');
         $btn_buy = $this->getTextForMsg('btn_buy_number');
         $btn_get_numbers = $this->getTextForMsg('btn_get_buyer_numbers');
@@ -253,6 +253,11 @@ trait Buyer
         $telegram = $this->numberService->getWithBuyerNumbers($this->chat->chat_id, null, TypeNumberEnum::telegram);
         $whatsapp = $this->numberService->getWithBuyerNumbers($this->chat->chat_id, null, TypeNumberEnum::whatsapp);
         $buyerModel = $this->buyerService->getBuyer($this->chat->chat_id);
+        $btn_return = $this->getTextForMsg('btn_return');
+        $text_change = $this->getTextForMsg('text_action');
+        $buttons = Keyboard::make()->buttons([
+            Button::make($btn_return)->action('buyer')
+        ]);
 
         if (count($telegram) > 0) {
             $active = count($telegram->where('status_number', StatusNumberEnum::active));
@@ -261,7 +266,7 @@ trait Buyer
             $message = "<b>🔵 Telegram 🔵</b>" . "\n\n" .
                 "Купленные номера: " . $active . "\n\n" .
                 "Слетевшие номера: " . $deactivate;
-            $this->chat->message($message)->send();
+            $this->sendMsg($message, null, 0);
         }
         if (count($whatsapp) > 0) {
             $active = count($whatsapp->where('status_number', StatusNumberEnum::active));
@@ -270,16 +275,13 @@ trait Buyer
             $message = "<b>🟢 WhatsApp 🟢</b>" . "\n\n" .
                 "Купленные номера: " . $active . "\n\n" .
                 "Слетевшие номера: " . $deactivate;
-            $this->chat->message($message)->send();
+            $this->sendMsg($message, null, 0);
         }
         if (count($telegram) === 0 && count($whatsapp) === 0) {
             $text_no_stats = $this->getTextForMsg('text_no_stats');
-            $btn_return = $this->getTextForMsg('btn_return');
-            $buttons = Keyboard::make()->buttons([
-                Button::make($btn_return)->action('buyer')
-            ]);
-            $this->sendMsg($text_no_stats, $buttons);
+            $this->sendMsg($text_no_stats);
         }
+        $this->sendMsg($text_change, $buttons, 0);
     }
 
     public function back(): void

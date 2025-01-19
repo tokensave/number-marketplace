@@ -42,9 +42,10 @@ class MoonShineServiceProvider extends MoonShineApplicationServiceProvider
                 ->icon('heroicons.user-group'),
             MenuItem::make('Продавцы', new SalesmanResource())
                 ->icon('heroicons.users'),
-//            MenuItem::make('Статистика', new StatisticsResource()),
             MenuItem::make('Кнопки для Бота', new TextForTgResource())
                 ->icon('heroicons.pencil'),
+            MenuItem::make('Статистика', new StatisticsResource())
+                ->icon('heroicons.chart-bar'),
         ];
     }
 

@@ -25,13 +25,18 @@ class BuyerResource extends ModelResource
 
     protected string $title = 'Покупатели';
 
-    public function getActiveActions(): array 
+    public function search(): array
+    {
+        return ['name'];
+    }
+
+    public function getActiveActions(): array
     {
         return ['update', 'delete', 'massDelete'];
     }
 
-    protected bool $editInModal = true; 
-    
+    protected bool $editInModal = true;
+
     /**
      * @return list<MoonShineComponent|Field>
      */
