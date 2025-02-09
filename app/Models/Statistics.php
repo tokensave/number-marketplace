@@ -19,10 +19,4 @@ class Statistics extends Model
             'count_deactivate',
             'count_pending',
         ];
-
-    protected $casts =
-        [
-            'type' => UserTypeEnum::class,
-            'provider_number' => TypeNumberEnum::class,
-        ];
 }

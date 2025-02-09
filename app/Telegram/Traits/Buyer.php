@@ -262,7 +262,7 @@ trait Buyer
         if (count($telegram) > 0) {
             $active = count($telegram->where('status_number', StatusNumberEnum::active));
             $deactivate = count($telegram->where('status_number', StatusNumberEnum::failed));
-            $this->userStatisticsService->createStatistics($this->chat->chat_id, UserTypeEnum::buyer->name, $buyerModel->name, TypeNumberEnum::telegram->name, $active, $deactivate, null);
+            $this->userStatisticsService->createStatistics($this->chat->chat_id, UserTypeEnum::buyer->name(), $buyerModel->name, TypeNumberEnum::telegram->name, $active, $deactivate, null);
             $message = "<b>🔵 Telegram 🔵</b>" . "\n\n" .
                 "Купленные номера: " . $active . "\n\n" .
                 "Слетевшие номера: " . $deactivate;
@@ -271,7 +271,7 @@ trait Buyer
         if (count($whatsapp) > 0) {
             $active = count($whatsapp->where('status_number', StatusNumberEnum::active));
             $deactivate = count($whatsapp->where('status_number', StatusNumberEnum::failed));
-            $this->userStatisticsService->createStatistics($this->chat->chat_id, UserTypeEnum::buyer->name, $buyerModel->name, TypeNumberEnum::whatsapp->name, $active, $deactivate, null);
+            $this->userStatisticsService->createStatistics($this->chat->chat_id, UserTypeEnum::buyer->name(), $buyerModel->name, TypeNumberEnum::whatsapp->name, $active, $deactivate, null);
             $message = "<b>🟢 WhatsApp 🟢</b>" . "\n\n" .
                 "Купленные номера: " . $active . "\n\n" .
                 "Слетевшие номера: " . $deactivate;

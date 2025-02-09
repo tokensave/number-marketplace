@@ -44,7 +44,7 @@ class BuyerResource extends ModelResource
     {
         return [
             Block::make([
-                ID::make()->sortable(),
+                ID::make(''),
                 Text::make('Имя', 'name'),
                 Switcher::make('Активен', 'enabled'),
                 Date::make('Создан', 'created_at'),

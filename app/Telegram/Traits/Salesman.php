@@ -211,7 +211,7 @@ trait Salesman
             $deactivate = count($telegram->where('status_number', StatusNumberEnum::active));
             $pending = count($telegram->where('status_number', StatusNumberEnum::pending));
             $count_numbers = $this->numberStatisticService->getCountNumbers(TypeNumberEnum::telegram->name);
-            $this->userStatisticsService->createStatistics($salesman->uuid, UserTypeEnum::seller->name, $salesman->name, TypeNumberEnum::telegram->name, $active, $deactivate, $pending);
+            $this->userStatisticsService->createStatistics($salesman->uuid, UserTypeEnum::seller->name(), $salesman->name, TypeNumberEnum::telegram->name, $active, $deactivate, $pending);
             $message = "<b>🔵 Telegram 🔵</b>" .
                 "\n\nВсего номеров в очереди: " . $count_numbers . "\n\n" .
                 "Купленные номера: " . $active . "\n\n" .
@@ -224,7 +224,7 @@ trait Salesman
             $deactivate = count($whatsapp->where('status_number', StatusNumberEnum::active));
             $pending = count($whatsapp->where('status_number', StatusNumberEnum::pending));
             $count_numbers = $this->numberStatisticService->getCountNumbers(TypeNumberEnum::telegram->name);
-            $this->userStatisticsService->createStatistics($salesman->uuid, UserTypeEnum::seller->name, $salesman->name, TypeNumberEnum::whatsapp->name, $active, $deactivate, $pending);
+            $this->userStatisticsService->createStatistics($salesman->uuid, UserTypeEnum::seller->name(), $salesman->name, TypeNumberEnum::whatsapp->name, $active, $deactivate, $pending);
             $message = "<b>🟢 WhatsApp 🟢</b>" .
                 "\n\nВсего номеров в очереди: " . $count_numbers . "\n\n" .
                 "Купленные номера: " . $active . "\n\n" .

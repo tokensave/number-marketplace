@@ -8,13 +8,14 @@ use App\Services\NumberStateService;
 use App\Telegram\Traits\Support;
 use DefStudio\Telegraph\Facades\Telegraph;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
-class DeactivateNumberJob implements ShouldQueue
+class DeactivateNumberJob implements ShouldQueue, ShouldBeUnique
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels, Support;
 

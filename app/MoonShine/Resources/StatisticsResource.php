@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\MoonShine\Resources;
 
+use App\Enums\TypeNumberEnum;
+use App\Enums\UserTypeEnum;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Statistics;
 
@@ -33,44 +35,36 @@ class StatisticsResource extends ModelResource
 
     public function getActiveActions(): array
     {
-        return ['delete'];
+        return ['view', 'delete'];
     }
 
-    /**
-     * @return list<MoonShineComponent|Field>
-     */
-    public function fields(): array
+    public function indexFields(): array
     {
         return [
-            Block::make([
-                Text::make(
-                    'Тип пользователя',
-                    'type',
-                    fn($item) => $item->type->name()
-                )->sortable(),
-                Text::make(
-                    'Имя',
-                    'name',
-                    fn($item) => $item->name
-                )->sortable(),
-                Text::make(
-                    'Мессенджер',
-                    'provider_number',
-                    fn($item) => $item->provider_number->value
-                )->sortable(),
-                Text::make(
-                    'Купленные',
-                    'count_active',
-                ),
-                Text::make(
-                    'Слетевшие',
-                    'count_deactivate',
-                ),
-                Text::make(
-                    'В ожидании',
-                    'count_pending',
-                ),
-            ]),
+            Text::make('Тип пользователя', 'type')->badge(
+                fn($item, Field $field) => match ($item) {
+                    UserTypeEnum::buyer->name() => 'green',
+                    UserTypeEnum::seller->name() => 'red',
+                    default => 'gray',
+                }),
+            Text::make('Имя', 'name'),
+            Text::make('Мессенджер', 'provider_number'
+            )->badge(
+                fn($item, Field $field) => match ($item) {
+                    TypeNumberEnum::whatsapp->value => 'green',
+                    TypeNumberEnum::telegram->value => 'blue',
+                    default => 'gray',
+                })
+        ];
+    }
+
+    public function detailFields(): array
+    {
+        return [
+            Text::make('Мессенджер', 'provider_number'),
+            Text::make('Купленные', 'count_active',),
+            Text::make('Слетевшие', 'count_deactivate',),
+            Text::make('В ожидании', 'count_pending',),
         ];
     }
 

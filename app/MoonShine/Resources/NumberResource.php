@@ -41,7 +41,7 @@ class NumberResource extends ModelResource
     {
         return [
             Block::make([
-                ID::make()->sortable(),
+                ID::make(''),
                 Text::make('Номер телефона', 'number'),
                 Text::make('Мессенджер', 'type_number', fn($item) => $item->type_number->value),
                 Text::make('Статус', 'status_number', fn($item) => $item->status_number->name()),
